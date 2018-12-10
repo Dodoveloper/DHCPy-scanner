@@ -1,2 +1,5 @@
 # input file
 input.json
+
+# python bytecode
+__pycache__
