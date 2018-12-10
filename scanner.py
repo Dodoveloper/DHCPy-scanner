@@ -130,11 +130,10 @@ def unpackOfferPacket(data, transactionID):
         dhcpOptions = data[240:]
         optionsDict = {}
         optionsOut = []
-        toPrint = {}
-        nextOption = dhcpOptions[0]
+        nextOption = dhcpOptions[0] # 53
         while nextOption is not 255:
             optionKey = nextOption
-            optionLen = dhcpOptions[1]
+            optionLen = dhcpOptions[1] # 1
             optionVal = dhcpOptions[2:2+optionLen]
             optionsDict[optionKey] = optionVal
             dhcpOptions = dhcpOptions[2+optionLen:]
@@ -142,22 +141,6 @@ def unpackOfferPacket(data, transactionID):
 
         for key in optionsDict:
             optionsOut.append(getOption(key, optionsDict[key]))
-
-        #print optionsOut
-
-        # Current iteration may not properly support more than one DNS server
-        """
-        DNS = []
-        dnsNB = ord(data[268])/4
-        for i in range(0, 4 * dnsNB, 4):
-            DNS.append(strToIP(data[269 + i :269 + i + 4]))
-        print('{0:20s}'.format('DNS Servers') + ' : ')
-        if DNS:
-            print('     {0:15s}'.format(DNS[0]))
-        if len(DNS) > 1:
-            for i in range(1, len(DNS)):
-                print('     {0:22s} {1:15s}'.format(' ', DNS[i]))
-        """
 
         for i in range(len(optionsOut)):
             print('{0:25s} : {1:15s}'.format(optionsOut[i][0], optionsOut[i][1]))
