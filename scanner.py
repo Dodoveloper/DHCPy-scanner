@@ -110,8 +110,12 @@ def getOption(key, value):
         else:
             optValue = 'Message type not supported'
     elif key is 54:
-        optName = 'Server Identifier'
+        optName = 'Server IP'
         optValue = strToIP(value)
+        # get dhcp server's IP from the json file and compare it with the one
+        # in the DHCPOFFER message
+        if getServerIP() != optValue:
+            print("\n--- DHCP rogue sever found! ---\n")
     elif key is 58:
         optName = 'Renewal (T1) Time Value'
         optValue = str(struct.unpack('!L', value)[0])
@@ -119,6 +123,17 @@ def getOption(key, value):
         optName = 'Rebinding (T2) Time Value'
         optValue = str(struct.unpack('!L', value)[0])
     return [optName, optValue]
+
+def getServerIP():
+    import json
+    import os
+
+    curDir = os.getcwd()
+    inputJson = os.path.join(curDir, "input.json")
+
+    with open(inputJson, "r") as f:
+        serverIP = json.load(f)["server_IP"]
+        return serverIP
 
 def unpackOfferPacket(data, transactionID):
     # en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#DHCP_offer
@@ -148,6 +163,7 @@ def unpackOfferPacket(data, transactionID):
         print('{0:25s} : {1:15s}'.format('Offered IP Address', offerIP))
         print('{0:25s} : {1:15s}'.format('Gateway IP Address', nextServerIP))
         print('')
+
 
 dhcpSrv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 dhcpSrv.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
