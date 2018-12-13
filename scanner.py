@@ -3,7 +3,7 @@ import struct
 from uuid import getnode as get_mac
 from random import randint
 
-# Based on http://code.activestate.com/recipes/577649-dhcp-query/
+# Based on https://github.com/doyler/SecurityTools/tree/master/PyDHCPDiscover
 
 def strToIP(input):
     input = socket.inet_ntoa(input)
@@ -114,8 +114,9 @@ def getOption(key, value):
         optValue = strToIP(value)
         # get dhcp server's IP from the json file and compare it with the one
         # in the DHCPOFFER message
-        if getServerIP() != optValue:
-            print("\n--- DHCP rogue sever found! ---\n")
+        if getJsonData("server_IP") != optValue:
+            print("\n--- DHCP ROGUE SERVER FOUND! ---\n")
+            sendEmail()
     elif key is 58:
         optName = 'Renewal (T1) Time Value'
         optValue = str(struct.unpack('!L', value)[0])
@@ -124,7 +125,33 @@ def getOption(key, value):
         optValue = str(struct.unpack('!L', value)[0])
     return [optName, optValue]
 
-def getServerIP():
+def sendEmail():
+    import smtplib
+    from email.mime.text import MIMEText
+
+    # get the data
+    sender = getJsonData("mail_sender")
+    receiver = getJsonData("mail_receiver")
+    domain = getJsonData("mail_domain")
+    password = getJsonData("mail_pass")
+    # build the email
+    text = "DHCP rogue server found!"
+    message = MIMEText(text, 'plain')
+    message["Subject"] = text # wip
+    message["From"] = sender
+    message["To"] = receiver
+    # try to send it
+    try:
+        smtpObj = smtplib.SMTP_SSL(domain)
+        smtpObj.login(sender, password)
+        smtpObj.sendmail(sender, receiver, message.as_string())
+        print("Successfully sent email")
+    except smtplib.SMTPException as e:
+        print("\nError: unable to send email\n", e)
+    finally:
+        smtpObj.close()
+
+def getJsonData(key):
     import json
     import os
 
@@ -132,8 +159,8 @@ def getServerIP():
     inputJson = os.path.join(curDir, "input.json")
 
     with open(inputJson, "r") as f:
-        serverIP = json.load(f)["server_IP"]
-        return serverIP
+        value = json.load(f)[key]
+        return value
 
 def unpackOfferPacket(data, transactionID):
     # en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#DHCP_offer
@@ -182,13 +209,13 @@ dhcpSrv.sendto(buildDiscoverPacket(transactionID), ('<broadcast>', 67))
 
 print('\nDHCP Discover sent, waiting for reply\n')
 
-dhcpSrv.settimeout(3)
-try:
-    while (1):
-        data = dhcpSrv.recv(2048)
-        unpackOfferPacket(data, transactionID)
-except Exception as ex:
-    if not ex is socket.timeout:
-        print('There was an exception with the offer: ' + str(ex))
+dhcpSrv.settimeout(6)
+# try:
+while (1):
+    data = dhcpSrv.recv(2048)
+    unpackOfferPacket(data, transactionID)
+# except Exception as ex:
+#     if not ex is socket.timeout:
+#         print('There was an exception with the offer: ' + str(ex))
 
 dhcpSrv.close()
