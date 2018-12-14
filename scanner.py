@@ -7,6 +7,11 @@ from random import randint
 
 class Scanner:
     rogueFound = False
+    optionsOut = []
+
+    def __init__(self):
+        self.rogueFound = False
+        self.optionsOut = []
 
     def strToIP(self, input):
         input = socket.inet_ntoa(input)
@@ -118,8 +123,7 @@ class Scanner:
             # get dhcp server's IP from the json file and compare it with the one
             # in the DHCPOFFER message
             if self.getJsonData("server_IP") != optValue:
-                print("\n--- DHCP ROGUE SERVER FOUND! ---\n")
-                # sendEmail()
+                self.rogueFound = True
         elif key is 58:
             optName = 'Renewal (T1) Time Value'
             optValue = str(struct.unpack('!L', value)[0])
@@ -128,19 +132,52 @@ class Scanner:
             optValue = str(struct.unpack('!L', value)[0])
         return [optName, optValue]
 
+    def unpackOfferPacket(self, data, transactionID):
+        # en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#DHCP_offer
+
+        if (data[4:8] == transactionID):
+            offerIP = self.strToIP(data[16:20])
+            nextServerIP = self.strToIP(data[20:24])
+            dhcpOptions = data[240:]
+            optionsDict = {}
+            nextOption = dhcpOptions[0] # 53
+            while nextOption is not 255:
+                optionKey = nextOption
+                optionLen = dhcpOptions[1] # 1
+                optionVal = dhcpOptions[2:2+optionLen]
+                optionsDict[optionKey] = optionVal
+                dhcpOptions = dhcpOptions[2+optionLen:]
+                nextOption = dhcpOptions[0]
+
+            for key in optionsDict:
+                self.optionsOut.append(self.getOption(key, optionsDict[key]))
+
+            if self.rogueFound:
+                print("\n--- DHCP ROGUE SERVER FOUND! ---\n")
+            else:
+                print('\n--- DHCP SERVER FOUND! ---\n')
+
+            for i in range(len(self.optionsOut)):
+                print('{0:25s} : {1:15s}'.format(self.optionsOut[i][0], self.optionsOut[i][1]))
+
+            print('{0:25s} : {1:15s}'.format('Offered IP Address', offerIP))
+            print('{0:25s} : {1:15s}'.format('Gateway IP Address', nextServerIP))
+            print('')
+
     def sendEmail(self):
         import smtplib
         from email.mime.text import MIMEText
 
         # get the data
-        sender = getJsonData("mail_sender")
+        sender = self.getJsonData("mail_sender")
         receiver = self.getJsonData("mail_receiver")
         domain = self.getJsonData("mail_domain")
         password = self.getJsonData("mail_pass")
         # build the email
-        text = "DHCP rogue server found!"
+        subject = "DHCP rogue server found!"
+        text = "self.optionsOut" # wip
         message = MIMEText(text, 'plain')
-        message["Subject"] = text # wip
+        message["Subject"] = subject
         message["From"] = sender
         message["To"] = receiver
         # try to send it
@@ -165,35 +202,6 @@ class Scanner:
             value = json.load(f)[key]
             return value
 
-    def unpackOfferPacket(self, data, transactionID):
-        # en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#DHCP_offer
-
-        if (data[4:8] == transactionID):
-            print('\nDHCP SERVER FOUND!\n-------------------')
-            offerIP = self.strToIP(data[16:20])
-            nextServerIP = self.strToIP(data[20:24])
-            dhcpOptions = data[240:]
-            optionsDict = {}
-            optionsOut = []
-            nextOption = dhcpOptions[0] # 53
-            while nextOption is not 255:
-                optionKey = nextOption
-                optionLen = dhcpOptions[1] # 1
-                optionVal = dhcpOptions[2:2+optionLen]
-                optionsDict[optionKey] = optionVal
-                dhcpOptions = dhcpOptions[2+optionLen:]
-                nextOption = dhcpOptions[0]
-
-            for key in optionsDict:
-                optionsOut.append(self.getOption(key, optionsDict[key]))
-
-            for i in range(len(optionsOut)):
-                print('{0:25s} : {1:15s}'.format(optionsOut[i][0], optionsOut[i][1]))
-
-            print('{0:25s} : {1:15s}'.format('Offered IP Address', offerIP))
-            print('{0:25s} : {1:15s}'.format('Gateway IP Address', nextServerIP))
-            print('')
-
     def run(self):
         dhcpSrv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         dhcpSrv.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -204,23 +212,21 @@ class Scanner:
         except Exception as ex:
             print('There was an exception with the bind: ' + str(ex))
             dhcpSrv.close()
-            #exit()
 
         transactionID = self.genTransactionID()
-
         dhcpSrv.sendto(self.buildDiscoverPacket(transactionID), ('<broadcast>', 67))
-
         print('\nDHCP Discover sent, waiting for reply\n')
-
-        dhcpSrv.settimeout(6)
-        # try:
-        while True:
-            data = dhcpSrv.recv(2048)
-            self.unpackOfferPacket(data, transactionID)
-        # except Exception as ex:
-        #     if not ex is socket.timeout:
-        #         print('There was an exception with the offer: ' + str(ex))
-
+        dhcpSrv.settimeout(3)
+        try:
+            while True:
+                data = dhcpSrv.recv(2048)
+                self.unpackOfferPacket(data, transactionID)
+        except Exception as ex:
+            if not ex is socket.timeout:
+                print('There was an exception with the offer: ' + str(ex))
+        finally:
+            if self.rogueFound:
+                self.sendEmail()
         dhcpSrv.close()
 ### end of class Scanner ###
 
