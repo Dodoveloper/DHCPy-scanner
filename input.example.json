@@ -1,3 +1,8 @@
 {
-  "server_IP": "192.168.1.1"
+  "server_IP": "192.168.1.1",
+  "mail_sender": "your_email@example.com",
+  "mail_receiver": "other_email@example.com",
+  "mail_domain": "smtp.gmail.com",
+  "mail_pass": "supersecurepassword",
+  "mail_info": 0
 }
