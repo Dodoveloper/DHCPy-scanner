@@ -175,7 +175,7 @@ class Scanner:
         password = self.getJsonData("mail_pass")
         # build the email
         subject = "DHCP rogue server found!"
-        text = "self.optionsOut" # wip
+        text = str(self.optionsOut)
         message = MIMEText(text, 'plain')
         message["Subject"] = subject
         message["From"] = sender
@@ -230,5 +230,6 @@ class Scanner:
         dhcpSrv.close()
 ### end of class Scanner ###
 
+# test
 s = Scanner()
 s.run()
