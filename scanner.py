@@ -202,6 +202,19 @@ class Scanner:
             value = json.load(f)[key]
             return value
 
+    def createLog(self):
+        import logging
+
+        logPath = "DHCP_scans.log"
+        logging.basicConfig(filename=logPath, filemode="a",
+                            format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        if self.rogueFound:
+            logging.warning("DHCP ROGUE FOUND!")
+            logging.warning(str(self.optionsOut))
+        else:
+            logging.info("DHCP SERVER FOUND!")
+
+
     def run(self):
         dhcpSrv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         dhcpSrv.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -225,11 +238,12 @@ class Scanner:
             if not ex is socket.timeout:
                 print('There was an exception with the offer: ' + str(ex))
         finally:
-            if self.rogueFound:
-                self.sendEmail()
+            # if self.rogueFound:
+            #     self.sendEmail()
+            self.createLog()
         dhcpSrv.close()
 ### end of class Scanner ###
 
 # test
-s = Scanner()
-s.run()
+# s = Scanner()
+# s.run()
