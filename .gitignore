@@ -3,3 +3,6 @@ input.json
 
 # python bytecode
 __pycache__
+
+# logfiles
+*.log
