@@ -251,5 +251,5 @@ class Scanner:
 ### end of class Scanner ###
 
 # test
-# s = Scanner()
-# s.run()
+s = Scanner()
+s.run()
