@@ -14,7 +14,12 @@ class Scanner:
         self.optionsOut = []
 
     def strToIP(self, input):
-        input = socket.inet_ntoa(input)
+        if len(input) == 4:
+            input = socket.inet_ntoa(input)
+        elif len(input) == 8:
+            input = socket.inet_ntop(socket.AF_INET6, input)
+        else:
+            print("input length: ", len(input))
         return input
 
     def getMacString(self):
@@ -207,12 +212,13 @@ class Scanner:
 
         logPath = "DHCP_scans.log"
         logging.basicConfig(filename=logPath, filemode="a",
-                            format='%(levelname)s:%(message)s', level=logging.DEBUG)
+                            format="%(asctime)s:%(message)s", level=logging.DEBUG)
         if self.rogueFound:
             logging.warning("DHCP ROGUE FOUND!")
             logging.warning(str(self.optionsOut))
         else:
             logging.info("DHCP SERVER FOUND!")
+            logging.info(str(self.optionsOut))
 
 
     def run(self):
