@@ -8,6 +8,8 @@ from random import randint
 class Scanner:
     rogueFound = False
     optionsOut = []
+    rogueServers = []
+    goodServer = {}
 
     def __init__(self):
         self.rogueFound = False
@@ -129,6 +131,8 @@ class Scanner:
             # in the DHCPOFFER message
             if self.getJsonData("server_IP") != optValue:
                 self.rogueFound = True
+            else:
+                self.rogueFound = False
         elif key is 58:
             optName = 'Renewal (T1) Time Value'
             optValue = str(struct.unpack('!L', value)[0])
@@ -214,11 +218,9 @@ class Scanner:
         logging.basicConfig(filename=logPath, filemode="a",
                             format="%(asctime)s:%(message)s", level=logging.DEBUG)
         if self.rogueFound:
-            logging.warning("DHCP ROGUE FOUND!")
-            logging.warning(str(self.optionsOut))
+            logging.warning("DHCP ROGUE FOUND!\n" + str(self.optionsOut))
         else:
-            logging.info("DHCP SERVER FOUND!")
-            logging.info(str(self.optionsOut))
+            logging.info("DHCP SERVER FOUND!\n" + str(self.optionsOut))
 
 
     def run(self):
@@ -240,13 +242,12 @@ class Scanner:
             while True:
                 data = dhcpSrv.recv(2048)
                 self.unpackOfferPacket(data, transactionID)
+                # if self.rogueFound:
+                #     self.sendEmail()
+                self.createLog()
         except Exception as ex:
             if not ex is socket.timeout:
                 print('There was an exception with the offer: ' + str(ex))
-        finally:
-            # if self.rogueFound:
-            #     self.sendEmail()
-            self.createLog()
         dhcpSrv.close()
 ### end of class Scanner ###
 
