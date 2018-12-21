@@ -7,9 +7,6 @@ from random import randint
 
 class Scanner:
     rogueFound = False
-    optionsOut = []
-    rogueServers = []
-    goodServer = {}
 
     def __init__(self):
         self.rogueFound = False
@@ -149,6 +146,7 @@ class Scanner:
             nextServerIP = self.strToIP(data[20:24])
             dhcpOptions = data[240:]
             optionsDict = {}
+            optionsOut = []
             nextOption = dhcpOptions[0] # 53
             while nextOption is not 255:
                 optionKey = nextOption
@@ -159,19 +157,22 @@ class Scanner:
                 nextOption = dhcpOptions[0]
 
             for key in optionsDict:
-                self.optionsOut.append(self.getOption(key, optionsDict[key]))
+                optionsOut.append(self.getOption(key, optionsDict[key]))
 
             if self.rogueFound:
                 print("\n--- DHCP ROGUE SERVER FOUND! ---\n")
             else:
                 print('\n--- DHCP SERVER FOUND! ---\n')
 
-            for i in range(len(self.optionsOut)):
-                print('{0:25s} : {1:15s}'.format(self.optionsOut[i][0], self.optionsOut[i][1]))
+            for i in range(len(optionsOut)):
+                print('{0:25s} : {1:15s}'.format(optionsOut[i][0], optionsOut[i][1]))
 
             print('{0:25s} : {1:15s}'.format('Offered IP Address', offerIP))
             print('{0:25s} : {1:15s}'.format('Gateway IP Address', nextServerIP))
             print('')
+
+            # create a log file with server info
+            self.createLog(optionsOut)
 
     def sendEmail(self):
         import smtplib
@@ -184,7 +185,8 @@ class Scanner:
         password = self.getJsonData("mail_pass")
         # build the email
         subject = "DHCP rogue server found!"
-        text = str(self.optionsOut)
+        text = """A rogue DHCP server has been found in your network.
+Please check the local log file for more info."""
         message = MIMEText(text, 'plain')
         message["Subject"] = subject
         message["From"] = sender
@@ -211,17 +213,22 @@ class Scanner:
             value = json.load(f)[key]
             return value
 
-    def createLog(self):
+    def createLog(self, info):
         import logging
 
         logPath = "DHCP_scans.log"
         logging.basicConfig(filename=logPath, filemode="a",
                             format="%(asctime)s:%(message)s", level=logging.DEBUG)
+        text = ""
+        for i in range(len(info)):
+            text += '{0:25s} : {1:15s}\n'.format(info[i][0], info[i][1])
+        text += "----------"
         if self.rogueFound:
-            logging.warning("DHCP ROGUE FOUND!\n" + str(self.optionsOut))
+            logging.warning("DHCP ROGUE FOUND!\n----------\n" + text)
         else:
-            logging.info("DHCP SERVER FOUND!\n" + str(self.optionsOut))
+            logging.info("DHCP SERVER FOUND!\n----------\n" + text)
 
+        print("Log file updated\n")
 
     def run(self):
         dhcpSrv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -242,12 +249,13 @@ class Scanner:
             while True:
                 data = dhcpSrv.recv(2048)
                 self.unpackOfferPacket(data, transactionID)
-                # if self.rogueFound:
-                #     self.sendEmail()
-                self.createLog()
         except Exception as ex:
             if not ex is socket.timeout:
                 print('There was an exception with the offer: ' + str(ex))
+        finally:
+            if self.rogueFound and self.getJsonData("mail_on") == 1:
+                self.sendEmail()
+
         dhcpSrv.close()
 ### end of class Scanner ###
 
