@@ -253,7 +253,7 @@ Please check the local log file for more info."""
             if not ex is socket.timeout:
                 print('There was an exception with the offer: ' + str(ex))
         finally:
-            if self.rogueFound and self.getJsonData("mail_on") == 1:
+            if self.rogueFound and self.getJsonData("mail_on") == "yes":
                 self.sendEmail()
 
         dhcpSrv.close()
