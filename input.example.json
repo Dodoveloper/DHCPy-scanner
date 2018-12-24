@@ -4,5 +4,5 @@
   "mail_receiver": "other_email@example.com",
   "mail_domain": "smtp.gmail.com",
   "mail_pass": "supersecurepassword",
-  "mail_on": "no"
+  "mail_on": false
 }
