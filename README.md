@@ -27,10 +27,24 @@ You will need to execute it with admin privileges, as DHCP uses UDP ports 67 and
 
 ### Examples
 DHCPy scanner prints various information on the terminal, such as server's IP,
-subnet mask, DNS IP, offered IP, lease time and more.
+subnet mask, DNS IP, offered IP, lease time and more. First I put my router's IP
+in the JSON file and the e-mail parameters (optional). If I launch the script
+on my local network, it prints out the following:
 
 ![img1](https://github.com/DodoIta/DHCPy-scanner/blob/readme/examples/imgs/scanner1.png "Normal Output")
+
+Now let's simulate the presence of a rogue DHCP server: to do this I use
+_dnsmasq_ and I make it run. This is what happens when I execute the scanner:
+
 ![img2](https://github.com/DodoIta/DHCPy-scanner/blob/readme/examples/imgs/scanner2.png "Output With Rogue")
+
+As you can see, the script detected two servers:
+- the first one is my router, since its IP address matches the one in the JSON,
+everything is OK.
+- the second one is dnsmasq, which is correctly detected as a rogue; also, in
+this case the script sent me a notification e-mail since I enabled the e-mail
+sending and a rogue was found.
+
 
 ### To do
 - Make the script run in the background and perform scans periodically
