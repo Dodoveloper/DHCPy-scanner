@@ -10,13 +10,13 @@ It acts as a common DHCP client: it builds a **DHCPDISCOVER** message
 and broadcasts it in the local network. Then it gets and parses each **DHCPOFFER**
 message received to print various info on the terminal and on a log file.
 
-DHCPy scanner can find rogue servers by confronting their IP address with the one
+DHCPy scanner can find rogue servers by confronting their IP addresses with the one
 specified in its input JSON file. You can also configure the JSON to send an
 e-mail to the specified address if a rogue DHCP server has just been detected.
 
 ### How to use it
 First rename the **input.example.json** to **input.json**, then replace the
-`server_IP` field with your trusted DHCP server. This step is mandatory.
+`server_IP` field with your trusted DHCP server's IP. This step is mandatory.
 
 Optionally you can set the other parameters so that the scanner will be able to
 send an e-mail when a rogue is found: if `mail_on`'s value is set to `true` and
