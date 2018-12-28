@@ -2,6 +2,7 @@ import socket
 import struct
 from uuid import getnode as get_mac
 from random import randint
+import sys
 
 # Based on https://github.com/doyler/SecurityTools/tree/master/PyDHCPDiscover
 
@@ -9,6 +10,8 @@ class Scanner:
     rogueFound = False
 
     def __init__(self):
+        if sys.version_info[0] < 3:
+            raise Exception("Python 3 or a more recent version is required.")
         self.rogueFound = False
         self.optionsOut = []
 
@@ -16,9 +19,9 @@ class Scanner:
         if len(input) == 4:
             input = socket.inet_ntoa(input)
         elif len(input) == 8:
-            input = socket.inet_ntop(socket.AF_INET6, input)
+            input = socket.inet_ntop(socket.AF_INET, input)
         else:
-            print("input length: ", len(input))
+            raise ValueError("Unexpected string length for {}".format(input))
         return input
 
     def getMacString(self):
@@ -259,6 +262,6 @@ Please check the local log file for more info."""
         dhcpSrv.close()
 ### end of class Scanner ###
 
-# test
+
 s = Scanner()
 s.run()
