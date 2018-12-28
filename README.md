@@ -2,6 +2,9 @@
 DHCPy scanner is a simple script written in Python which helps you find
 potential DHCP rogue servers in your local network.
 
+### Requirements
+Python 3 or above should be fine. Only standard libraries are used for this software.
+
 ### How it works
 It acts as a common DHCP client: it builds a **DHCPDISCOVER** message
 and broadcasts it in the local network. Then it gets and parses each **DHCPOFFER**
