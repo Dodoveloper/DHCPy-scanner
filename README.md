@@ -59,3 +59,4 @@ In both cases each server info is written on the log file, placed in the script'
 
 ### To do
 - Make the script run in the background and perform scans periodically
+- Fix parsing issue with multiple DNSs
